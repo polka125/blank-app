@@ -1,3 +1,8 @@
+print("hi there")
+
+import sys
+sys.exit(0)
+
 import streamlit as st
 
 st.title("🎈 My new app")
