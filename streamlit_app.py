@@ -193,29 +193,28 @@ import subprocess
 
 def get_running_processes():
     """Get information about running processes"""
-    processes = []
-    
     if platform.system() == 'Windows':
         try:
-            # Windows - using tasklist
             output = subprocess.check_output(['tasklist'], text=True)
-            processes.append(output)
-        except:
-            processes.append("Unable to get process list on Windows")
+            return output
+        except subprocess.CalledProcessError as e:
+            return f"Error running tasklist: {str(e)}"
+        except Exception as e:
+            return f"Unexpected error getting Windows process list: {str(e)}"
     else:
         try:
-            # Unix-like systems - using ps
             output = subprocess.check_output(['ps', 'aux'], text=True)
-            processes.append(output)
-        except:
+            return output
+        except subprocess.CalledProcessError as e:
             try:
-                # Alternative command if ps aux doesn't work
                 output = subprocess.check_output(['ps', '-ef'], text=True)
-                processes.append(output)
-            except:
-                processes.append("Unable to get process list on Unix")
-    
-    return "\n".join(processes)
+                return output
+            except subprocess.CalledProcessError as e:
+                return f"Error running ps command: {str(e)}"
+            except Exception as e:
+                return f"Unexpected error running ps -ef: {str(e)}"
+        except Exception as e:
+            return f"Unexpected error running ps aux: {str(e)}"
 
 
 
