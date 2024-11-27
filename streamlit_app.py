@@ -584,11 +584,26 @@ def scan_ports() -> str:
     Returns formatted string of open ports and their details.
     Includes: protocol, state, pid, program name, user
     """
-    import psutil
+    import sys
+    import subprocess
+    
+    # Check and install psutil if needed
+    try:
+        import psutil
+    except ImportError:
+        try:
+            print("Installing psutil...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "psutil"])
+            import psutil
+            print("psutil installed successfully.")
+        except Exception as e:
+            return f"Error installing psutil: {str(e)}\nPlease install it manually with: pip install psutil"
+    
     import pwd
     from collections import defaultdict
     import socket
     
+    # Rest of the function remains the same as before
     def get_process_info(pid):
         try:
             proc = psutil.Process(pid)
@@ -607,18 +622,15 @@ def scan_ports() -> str:
         except:
             return '?'
     
-    # Gather all connections
     stats = defaultdict(list)
     total_tcp = total_udp = total_ports = 0
     
-    # TCP connections
     for conn in psutil.net_connections(kind='tcp'):
         if conn.status == 'LISTEN':
             total_tcp += 1
             total_ports += 1
             local_ip, local_port = conn.laddr
             
-            # Get process info
             proc_info = get_process_info(conn.pid) if conn.pid else {
                 'name': '?', 'user': '?', 'cmdline': '?', 'create_time': 0
             }
@@ -633,13 +645,11 @@ def scan_ports() -> str:
                 'process': proc_info
             })
     
-    # UDP connections
     for conn in psutil.net_connections(kind='udp'):
         total_udp += 1
         total_ports += 1
         local_ip, local_port = conn.laddr
         
-        # Get process info
         proc_info = get_process_info(conn.pid) if conn.pid else {
             'name': '?', 'user': '?', 'cmdline': '?', 'create_time': 0
         }
@@ -654,7 +664,6 @@ def scan_ports() -> str:
             'process': proc_info
         })
     
-    # Format output
     output = []
     output.append(f"Open Ports Summary:")
     output.append(f"Total ports: {total_ports}")
@@ -662,7 +671,6 @@ def scan_ports() -> str:
     output.append(f"UDP: {total_udp}")
     output.append("\nDetailed Port Information:")
     
-    # Sort by port number
     for port in sorted(stats.keys()):
         for conn in stats[port]:
             proto = conn['proto'].upper()
@@ -681,5 +689,10 @@ def scan_ports() -> str:
             )
     
     return "\n".join(output)
+
+# Usage example:
+"""
+print(scan_ports())
+"""
 
 st.write(scan_ports())
