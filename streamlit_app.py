@@ -5,7 +5,7 @@ st.write(
     "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
 )
 
-st.write("new here")
+st.write("new here!")
 
 # import os
 # st.write(str(os.path.exists('/.dockerenv')))
