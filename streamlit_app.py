@@ -477,7 +477,102 @@ def format_scan_results(result: dict, show_errors: bool = True, indent: str = " 
     
     return "\n".join(output)
 
-
 scan_result = scan_paths(os.path.expanduser('~/../'))
 formatted_output = format_scan_results(scan_result)
 st.write(formatted_output)
+
+
+def list_tree(path: str = '.') -> str:
+    """
+    Return formatted string of all files in directory tree.
+    Format: mode links owner group size date modified name [-> link_target]
+    """
+    import os
+    import stat
+    import pwd
+    import grp
+    from datetime import datetime
+    
+    def fmt_size(size: int) -> str:
+        for unit in ['B','K','M','G','T']:
+            if size < 1024: return f"{size:4.1f}{unit}"
+            size /= 1024
+        return f"{size:4.1f}P"
+    
+    def fmt_time(ts: float) -> str:
+        dt = datetime.fromtimestamp(ts)
+        now = datetime.now()
+        if now.year == dt.year:
+            return dt.strftime("%b %d %H:%M")
+        return dt.strftime("%b %d  %Y")
+    
+    output = []
+    
+    try:
+        for root, dirs, files in os.walk(path):
+            entries = []
+            
+            # Add directories
+            for name in dirs:
+                entries.append((name, True))
+            # Add files
+            for name in files:
+                entries.append((name, False))
+                
+            # Sort entries (dirs first, then case-insensitive)
+            entries.sort(key=lambda x: (not x[1], x[0].lower()))
+            
+            # Process each entry
+            for name, _ in entries:
+                try:
+                    full_path = os.path.join(root, name)
+                    st = os.lstat(full_path)
+                    
+                    # Get mode string
+                    mode = stat.filemode(st.st_mode)
+                    
+                    # Get owner/group
+                    try:
+                        owner = pwd.getpwuid(st.st_uid).pw_name
+                    except:
+                        owner = str(st.st_uid)
+                    try:
+                        group = grp.getgrgid(st.st_gid).gr_name
+                    except:
+                        group = str(st.st_gid)
+                    
+                    # Get type indicator
+                    if stat.S_ISLNK(st.st_mode):
+                        indicator = "@"
+                    elif stat.S_ISDIR(st.st_mode):
+                        indicator = "/"
+                    elif st.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
+                        indicator = "*"
+                    else:
+                        indicator = ""
+                    
+                    # Get link target
+                    link_target = ""
+                    if stat.S_ISLNK(st.st_mode):
+                        try:
+                            link_target = f" -> {os.readlink(full_path)}"
+                        except:
+                            link_target = " -> ?"
+                    
+                    # Format line
+                    line = (f"{mode} {st.st_nlink:>3} {owner:<8} {group:<8} "
+                           f"{fmt_size(st.st_size):>6} {fmt_time(st.st_mtime)} "
+                           f"{os.path.join(root, name)}{indicator}{link_target}")
+                    
+                    output.append(line)
+                    
+                except Exception as e:
+                    output.append(f"Error accessing {full_path}: {str(e)}")
+                    
+    except Exception as e:
+        return f"Error scanning {path}: {str(e)}"
+    
+    return "\n".join(output)
+
+
+st.write(list_tree('/home/appuser'))
