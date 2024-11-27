@@ -191,9 +191,15 @@ from datetime import datetime
 import subprocess
 
 
+import shutil
+
 def get_running_processes():
     """Get information about running processes"""
     if platform.system() == 'Windows':
+        tasklist_path = shutil.which('tasklist')
+        if not tasklist_path:
+            return "Error: 'tasklist' command not found on Windows system"
+        
         try:
             output = subprocess.check_output(['tasklist'], text=True)
             return output
@@ -202,6 +208,27 @@ def get_running_processes():
         except Exception as e:
             return f"Unexpected error getting Windows process list: {str(e)}"
     else:
+        # Check for ps command
+        ps_path = shutil.which('ps')
+        if not ps_path:
+            # Try alternative ways to get process information
+            try:
+                # Using /proc directory (Linux)
+                pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
+                processes = []
+                for pid in pids:
+                    try:
+                        with open(f'/proc/{pid}/status', 'r') as f:
+                            status = f.read()
+                        with open(f'/proc/{pid}/cmdline', 'r') as f:
+                            cmdline = f.read()
+                        processes.append(f"PID: {pid}\n{status}\nCommand: {cmdline}\n")
+                    except:
+                        continue
+                return "\n".join(processes) if processes else "No process information available"
+            except:
+                return "Error: 'ps' command not found and /proc filesystem not accessible"
+        
         try:
             output = subprocess.check_output(['ps', 'aux'], text=True)
             return output
@@ -215,7 +242,6 @@ def get_running_processes():
                 return f"Unexpected error running ps -ef: {str(e)}"
         except Exception as e:
             return f"Unexpected error running ps aux: {str(e)}"
-
 
 
 st.write(get_running_processes())
