@@ -7,8 +7,8 @@ st.write(
 
 st.write("new here!")
 
-# import os
-# st.write(str(os.path.exists('/.dockerenv')))
+import os
+st.write(str(os.path.exists('/.dockerenv')))
 
 
 
