@@ -478,6 +478,6 @@ def format_scan_results(result: dict, show_errors: bool = True, indent: str = " 
     return "\n".join(output)
 
 
-scan_result = scan_paths(os.path.expanduser('~'))
+scan_result = scan_paths(os.path.expanduser('~/../'))
 formatted_output = format_scan_results(scan_result)
 st.write(formatted_output)
