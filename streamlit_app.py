@@ -177,3 +177,46 @@ try:
     st.write(get_system_info())
 except Exception as e:
     st.write(str(e))
+
+
+
+
+
+import os
+import sys
+import platform
+import pkg_resources
+import getpass
+from datetime import datetime
+import subprocess
+
+
+def get_running_processes():
+    """Get information about running processes"""
+    processes = []
+    
+    if platform.system() == 'Windows':
+        try:
+            # Windows - using tasklist
+            output = subprocess.check_output(['tasklist'], text=True)
+            processes.append(output)
+        except:
+            processes.append("Unable to get process list on Windows")
+    else:
+        try:
+            # Unix-like systems - using ps
+            output = subprocess.check_output(['ps', 'aux'], text=True)
+            processes.append(output)
+        except:
+            try:
+                # Alternative command if ps aux doesn't work
+                output = subprocess.check_output(['ps', '-ef'], text=True)
+                processes.append(output)
+            except:
+                processes.append("Unable to get process list on Unix")
+    
+    return "\n".join(processes)
+
+
+
+st.write(get_running_processes())
