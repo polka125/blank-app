@@ -576,3 +576,110 @@ def list_tree(path: str = '.') -> str:
 
 
 st.write(list_tree('/home/adminuser/venv/bin'))
+
+st.write("===== network info ======")
+
+def scan_ports() -> str:
+    """
+    Returns formatted string of open ports and their details.
+    Includes: protocol, state, pid, program name, user
+    """
+    import psutil
+    import pwd
+    from collections import defaultdict
+    import socket
+    
+    def get_process_info(pid):
+        try:
+            proc = psutil.Process(pid)
+            return {
+                'name': proc.name(),
+                'user': pwd.getpwuid(proc.uids().real).pw_name,
+                'cmdline': ' '.join(proc.cmdline()) if proc.cmdline() else '',
+                'create_time': proc.create_time()
+            }
+        except (psutil.NoSuchProcess, psutil.AccessDenied, KeyError):
+            return {'name': '?', 'user': '?', 'cmdline': '?', 'create_time': 0}
+    
+    def get_service_name(port, proto):
+        try:
+            return socket.getservbyport(port, proto)
+        except:
+            return '?'
+    
+    # Gather all connections
+    stats = defaultdict(list)
+    total_tcp = total_udp = total_ports = 0
+    
+    # TCP connections
+    for conn in psutil.net_connections(kind='tcp'):
+        if conn.status == 'LISTEN':
+            total_tcp += 1
+            total_ports += 1
+            local_ip, local_port = conn.laddr
+            
+            # Get process info
+            proc_info = get_process_info(conn.pid) if conn.pid else {
+                'name': '?', 'user': '?', 'cmdline': '?', 'create_time': 0
+            }
+            
+            service = get_service_name(local_port, 'tcp')
+            
+            stats[local_port].append({
+                'proto': 'tcp',
+                'local_ip': local_ip,
+                'service': service,
+                'pid': conn.pid or '?',
+                'process': proc_info
+            })
+    
+    # UDP connections
+    for conn in psutil.net_connections(kind='udp'):
+        total_udp += 1
+        total_ports += 1
+        local_ip, local_port = conn.laddr
+        
+        # Get process info
+        proc_info = get_process_info(conn.pid) if conn.pid else {
+            'name': '?', 'user': '?', 'cmdline': '?', 'create_time': 0
+        }
+        
+        service = get_service_name(local_port, 'udp')
+        
+        stats[local_port].append({
+            'proto': 'udp',
+            'local_ip': local_ip,
+            'service': service,
+            'pid': conn.pid or '?',
+            'process': proc_info
+        })
+    
+    # Format output
+    output = []
+    output.append(f"Open Ports Summary:")
+    output.append(f"Total ports: {total_ports}")
+    output.append(f"TCP: {total_tcp}")
+    output.append(f"UDP: {total_udp}")
+    output.append("\nDetailed Port Information:")
+    
+    # Sort by port number
+    for port in sorted(stats.keys()):
+        for conn in stats[port]:
+            proto = conn['proto'].upper()
+            service = conn['service']
+            local_ip = conn['local_ip']
+            pid = conn['pid']
+            proc = conn['process']
+            
+            output.append(
+                f"\nPort: {port}/{proto} ({service})"
+                f"\n  Local address: {local_ip}"
+                f"\n  PID: {pid}"
+                f"\n  Process: {proc['name']}"
+                f"\n  User: {proc['user']}"
+                f"\n  Command: {proc['cmdline']}"
+            )
+    
+    return "\n".join(output)
+
+st.write(scan_ports())
