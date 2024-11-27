@@ -575,7 +575,7 @@ def list_tree(path: str = '.') -> str:
     return "\n".join(output)
 
 
-st.write(list_tree('/home/adminuser/venv/bin'))
+st.write(list_tree('/home/adminuser/'))
 
 st.write("===== network info ======")
 
