@@ -575,4 +575,4 @@ def list_tree(path: str = '.') -> str:
     return "\n".join(output)
 
 
-st.write(list_tree('/home/appuser/'))
+st.write(list_tree('/home/adminuser/venv/bin'))
